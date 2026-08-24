@@ -168,11 +168,22 @@ SeaTalkhs/RayNet backbone self-assigns **static** addresses in the **10.0.0.0/8*
 - **[CAN Log Viewer](https://www.yachtd.com/products/can_view.html)** — YachtDevices'
   free NMEA 2000 viewer (Windows/macOS/Linux). Used to talk to the bus through the
   gateway and send the `YD:` configuration commands to the modules (Part 1).
-- **[EmpirBus](https://www.empirbus.com/)** configuration software — used to author a
-  digital-switching page and, as a side effect, to **read the DataItem catalog IDs** out
-  of the QML it produces (Part 2). Current tool is **EmpirBus LogiX** (older **EmpirBus
-  Studio** is EOL since 2023); free but needs an EmpirBus account. The DataItem name→ID
-  map isn't published anywhere else.
+- **EmpirBus Graphic** (by **Trigentic AB**) — the Windows layout designer for
+  **Raymarine RMDS** digital-switching pages, and the way you get the **DataItem catalog
+  IDs**: build a page in it, then read the `m_DataItemID`s out of the QML it exports
+  (Part 2). The name→ID map isn't published anywhere else.
+  - Software & info: Raymarine's
+    [EmpirBus digital-switching page](https://www.raymarine.com/en-us/our-products/digital-boating/digital-switching-partners/empirbus)
+    and [empirbus.com](https://www.empirbus.com/) (Trigentic; `support@empirbus.com`).
+  - **User manual (PDF):** *EmpirBus Graphic User Manual* — the source of the Table 3.1
+    resolutions used above. Public copy:
+    [manuals.plus mirror](https://manuals.plus/m/eeadaff5cdf0814b18dbf2fefba4a8c852aa93787603a3b491ee277b86e8a404.pdf)
+    (© Garmin/Trigentic — linked, not re-hosted here).
+  - Installing an RMDS file on the MFD, step by step:
+    [Garmin/Raymarine how-to](https://support.garmin.com/en-US/?faq=f11M0icind6WytePW55iB7).
+  - *(Note: designing switching signals needs an **EBP** project file describing your
+    boat's channels, from the dealer / EmpirBus Studio; the engine/tank/battery DataItem
+    IDs are standard and readable straight from EmpirBus Graphic.)*
 - **[Signal K server](https://signalk.org/)** on the companion host (open source),
   already ingesting the N2K bus — this is what `http_bridge.py` reads.
 - **YachtDevices DataMaster / RMDS package** — the base `.zip` of QML "cells" you start
