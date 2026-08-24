@@ -155,7 +155,9 @@ class Gateway:
         for i, v in enumerate(chan_states):
             b1 |= (v & 3) << (2 * i)
         can_id = "%02X%02X0E%02X" % (0x0D, 0xF2, SOURCE_ADDR)   # PGN 127502, our SA
-        frame = "%s 00 %02X 00 00 00 00 00 00\r\n" % (can_id, b1)
+        # data byte 0 = the switch-bank INSTANCE (must match BANK, or you address the
+        # wrong bank and nothing switches); byte 1 = the four 2-bit channel states.
+        frame = "%s %02X %02X 00 00 00 00 00 00\r\n" % (can_id, BANK, b1)
         with self.lock:
             self._connect()
             for _ in range(10):              # relays like a short burst

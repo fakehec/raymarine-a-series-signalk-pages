@@ -14,6 +14,17 @@ Everything here uses public, documented mechanisms (Signal K REST, NMEA 2000 PGN
 LightHouse "RMDS" QML page format, a YachtDevices gateway). No MFD firmware is modified;
 pages install through the MFD's normal **Import Configuration File** menu.
 
+> **What this is based on.** The data-page half of this builds directly on the (now
+> unavailable) official Raymarine forum guide *"[TG11] Creating custom data pages on
+> Lighthouse 2 and Lighthouse 3 MFDs"* by **Tom (Raymarine moderator)**. The forum has
+> since closed; read it in the Internet Archive:
+> [web.archive.org/…/showthread.php?tid=6834](http://web.archive.org/web/20250523053102/https://forum.raymarine.com/showthread.php?tid=6834).
+> That post is where the **blank `.EBP` project file** (the "generic EPB" you load into
+> EmpirBus Graphic) comes from — it's attached to the thread. This repo does **not**
+> re-host it or the YachtDevices cell library; it links to the source and adds the
+> control layer, the HTTP bridge, and the extracted DataItem IDs
+> ([`dataitem_ids.md`](dataitem_ids.md)) on top.
+
 > Platform: this was built and tested on a **Raymarine a128** (a 12″ a-Series unit),
 > **LightHouse II**, QML in the **QtQuick 1.1** dialect. Companion host: a small Linux box
 > (a Raspberry Pi is plenty) running **Signal K** and ingesting the N2K bus.
@@ -224,6 +235,26 @@ DataMaster tools produce). Two kinds of cell:
 The whole page is plain QML, and — crucially — QtQuick 1.1 ships **`XMLHttpRequest`**.
 That one fact is what makes everything below possible.
 
+**What's inside the package (so you know what you're editing).** A real exported RMDS
+`.zip` is a self-contained QML tree, roughly:
+
+```
+Pages/PageSet.qml     # the page registry: an Item (width 1280, height 800) that lists
+Pages/Page_1.qml      #   your pages and their titles — this is what the MFD loads
+Cells/                # the YachtDevices cell library (Control + DataItem cells)
+Cells/Indicators/...  #   e.g. DigitalValueDataItemCenterAligned.qml — the DataItem cells
+Assets/  ViewerLib/   # SVG/PNG artwork + a bundled copy of the cell library
+Cell.qml  CellBox.qml  CellTitle.qml  Version.txt
+```
+
+You **start from a valid exported package and edit `Pages/Page_*.qml`** — you don't build
+this tree by hand, and you don't zip two loose QML files and expect it to import. The
+`Cells/`, `ViewerLib/` and `Assets/` trees are **YachtDevices' library** — keep them,
+don't redistribute them (this repo doesn't). One more thing that trips people up: the
+pages reference an implicit **`view`** context object (`view.width` / `view.height`) —
+that's provided by the RMDS runtime on the MFD, not something you declare. The sample
+pages here author a fixed `1280 × 800` content `Item` and scale it to `view`.
+
 ---
 
 ## Part 1 — Electrical control (the boat-plan page)
@@ -272,7 +303,8 @@ Each command answers `… DONE`. Half a dozen commands, once.
 ### Building the plan page
 
 The plan is one background image (a top-down deck render — from the boat's brochure/
-manual) scaled into the logical canvas. Markers are a `ListModel` of `{ n, fx, fy,
+manual) scaled into the logical canvas. Ship this `plan.jpg` **inside the package, next
+to the page QML** (referenced with a relative `source:`). Markers are a `ListModel` of `{ n, fx, fy,
 onColor }`; `fx/fy` are fractional positions over the image, so the dots land on the
 right cabins regardless of scaling:
 
@@ -390,12 +422,16 @@ DataItems can't.
    tiles.
 
    **Getting the DataItem IDs is the catch.** The name→ID catalog is **not publicly
-   documented** — it lives inside the dealer software. In practice you build a page in the
-   **EmpirBus** tool, drop in the named DataItems you want, and **read the assigned IDs
-   out of the QML it produces** — every cell carries an `m_Name` ↔ `m_DataItemID` pair.
-   Extract that map once and reuse it. (It's full of surprises: `86 = Fuel Pressure`, and
-   there are *two* economy items — `84 = Inst. Fuel Economy` and `104 = Fuel Economy`.)
-   Without the EmpirBus tool (or a page someone already built with it), you're guessing
+   documented** — it lives inside the dealer software. The method (straight from the
+   [TG11 guide](http://web.archive.org/web/20250523053102/https://forum.raymarine.com/showthread.php?tid=6834)):
+   open EmpirBus Graphic, **import the blank `.EBP` project attached to that thread**,
+   press *Data Item* and drop in the DataItems you want (set the **Primary Instance** for
+   instanced types — engine 0/1, tank 0/1…), then export and **read the assigned IDs out
+   of the QML it produces** — every cell carries an `m_Name` ↔ `m_DataItemID` pair.
+   Extract that map once and reuse it. **The map we extracted this way is in
+   [`dataitem_ids.md`](dataitem_ids.md)** (51 signals). It's full of surprises:
+   `86 = Fuel Pressure`, and there are *two* economy items — `84 = Inst. Fuel Economy`
+   and `104 = Fuel Economy`. Without the EmpirBus tool (or that table), you're guessing
    IDs — don't.
 3. **Zip** the tree into `RMDS_<name>.zip`.
 4. **Import** on the MFD (Part 3).
@@ -475,8 +511,15 @@ If you don't run such a plugin, drop these tiles — the rest works without them
 
 Pages ship as a standard **RMDS `.zip`**; installing needs no special access to the MFD:
 
-1. Copy `RMDS_<name>.zip` to the MFD's **SD card**.
-2. On the MFD: **digital switching → Import Configuration File → pick the zip.**
+1. Copy `RMDS_<name>.zip` to the MFD's **MicroSD card**.
+2. **LightHouse II** (a/c/e-Series, incl. the a128): import via
+   **Home → Setup → System Settings → External Devices → Switch Panel Setup → Install
+   Config File** (exact path from the TG11 guide).
+3. **LightHouse 3** (Axiom): the RMDS file must first be **converted to an `.RMDC`** at
+   [cloud.empirbus.com](https://cloud.empirbus.com) (free registration), then imported via
+   **Dashboard app → Menu → Settings → Import custom pages**. *(The base data-page
+   technique is documented for LH3 this way; the control/HTTP layer in this repo has only
+   been tested on LH II — see the compatibility note up top.)*
 
 Iterate by rebuilding the zip and re-importing.
 
@@ -509,6 +552,7 @@ Iterate by rebuilding the zip and re-importing.
 
 ```
 http_bridge.py            # companion HTTP service: /wx (data) + /set /toggle /state (control)
+dataitem_ids.md           # the extracted EmpirBus/RMDS DataItem name->ID catalog (51 signals)
 pages/
   ElectricalControl.qml   # sample control page: boat plan + markers + state sync
   Environment.qml         # sample data page (native cells + HTTP tiles + poll)
