@@ -18,6 +18,12 @@ pages install through the MFD's normal **Import Configuration File** menu.
 > **QtQuick 1.1** dialect. Companion host: a small Linux box (a Raspberry Pi is plenty)
 > running **Signal K** and ingesting the N2K bus.
 
+**Which MFDs this works on.** The same mechanism applies to **any Raymarine MFD running
+LightHouse II** — that's the **a-, c- and e-Series** — since they share the RMDS/QML
+digital-switching engine. It has **not been tested on LightHouse 3** (Axiom and LH3-
+updated units); the QML/RMDS approach is assumed to be similar there but is **unverified**
+— treat LH3 as "probably, but try it and see."
+
 **Contents**
 - [Architecture & wiring](#architecture--wiring)
 - [Hardware you need](#hardware-you-need)
@@ -121,19 +127,23 @@ indicators** (YDRI inputs that only ever show idle/active). The YDCC lives on on
 
 ## Networking: getting the MFD to reach the bridge
 
-This is the step most people trip on. The a-Series MFD serves/consumes data on its
-**Ethernet (RayNet/SeaTalkhs) network**; your companion host has to be reachable **on
-that same IP subnet** so the QML's `XMLHttpRequest` can hit it.
+This is the step most people trip on. The MFD serves/consumes data on its **Ethernet
+(RayNet/SeaTalkhs) network**; your companion host has to be reachable **on that same IP
+subnet** so the QML's `XMLHttpRequest` can hit it.
+
+**Raymarine's network is `10.0.0.0/8` with fixed IPs.** All Raymarine gear on the
+SeaTalkhs/RayNet backbone self-assigns **static** addresses in the **10.0.0.0/8** range
+(no DHCP server hands them out — each unit picks and keeps a fixed 10.x address). So:
 
 1. **Put the companion host on the MFD's network.** Wire it to the MFD's Ethernet
    (a **RayNet-to-RJ45** adapter cable), or bridge it in through the same switch the MFD
    uses. If your gateway is the **Wi-Fi** model, the host can instead join the gateway's
-   Wi-Fi — but the *MFD* still has to be able to route to the host, so an Ethernet link on
-   the MFD's own network is the reliable path.
-2. **Give the host a static IP in the MFD's range** (the a-Series network is a fixed
-   private range; check what the MFD uses and pick a free static address on it).
-3. **Point the pages at `http://<host-ip>:8888`** — that's the single value you set in
-   the QML poll URLs (and the gateway address you set in `http_bridge.py`).
+   Wi-Fi — but the *MFD* still has to route to the host, so an Ethernet link on the MFD's
+   own network is the reliable path.
+2. **Give the host a *static* IP inside `10.0.0.0/8`** with mask `255.0.0.0`, picking an
+   address that doesn't clash with the Raymarine units already there (note theirs first).
+3. **Point the pages at `http://<host-ip>:8888`** — the single value you set in the QML
+   poll URLs (and the gateway address in `http_bridge.py`).
 4. Verify from a laptop on the same network: `curl http://<host-ip>:8888/wx` should
    return JSON before you ever touch the MFD.
 
