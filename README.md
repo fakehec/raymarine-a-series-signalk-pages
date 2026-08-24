@@ -14,17 +14,21 @@ Everything here uses public, documented mechanisms (Signal K REST, NMEA 2000 PGN
 LightHouse "RMDS" QML page format, a YachtDevices gateway). No MFD firmware is modified;
 pages install through the MFD's normal **Import Configuration File** menu.
 
-> Platform: a-Series MFD, **LightHouse II**, QML in the **QtQuick 1.1** dialect.
-> Companion host: a small Linux box (a Raspberry Pi is plenty) running **Signal K** and
-> ingesting the N2K bus.
+> Platform: this was built and tested on a **Raymarine a128** (a 12″ a-Series unit),
+> **LightHouse II**, QML in the **QtQuick 1.1** dialect. Companion host: a small Linux box
+> (a Raspberry Pi is plenty) running **Signal K** and ingesting the N2K bus.
 >
 > **Design resolution — per MFD model.** Author your layout at the display's native
-> resolution (EmpirBus Graphic *User Manual v2.3*, Table 3.1). The **12″ units — a12
-> (a125/a127/**a128**), c12, e12, e16, gS12/16** — are **1280 × 800**; the **7″/9″ units
-> (a7, a9, c9, e7, e9, eS7/9, gS9)** are **800 × 480**. After the MFD chrome (a **50 px**
-> menu border + a **25 px** page-title border), the usable area on a 1280 × 800 unit is
-> **1280 × 725**. Author the content `Item` at the full model size and scale it to the
-> runtime viewport (`transform: Scale { xScale: view.width/1280; ... }`).
+> resolution (EmpirBus Graphic *User Manual v2.3*, Table 3.1). **The a128 is `1280 × 800`.**
+> The other 12″ units — a12 (a125/a127), c12, e12, e16, gS12/16 — are 1280 × 800 too; the
+> 7″/9″ units (a7, a9, c9, e7, e9, eS7/9, gS9) are 800 × 480. After the MFD chrome (a
+> **50 px** menu border + a **25 px** page-title border), the usable area on a 1280 × 800
+> unit is **1280 × 725**. Author the content `Item` at the full model size and scale it to
+> the runtime viewport (`transform: Scale { xScale: view.width/1280; ... }`).
+>
+> ⚠ **On the a128, use 1280 × 800 — not 800 × 480.** Building the boat-plan page at
+> 800 × 480 renders it **distorted and cropped**; 1280 × 800 is correct and fills the
+> screen, exactly as the manual's Table 3.1 says. (Tested the hard way.)
 
 **Which MFDs this works on.** The same mechanism applies to **any Raymarine MFD running
 LightHouse II** — that's the **a-, c- and e-Series** — since they share the RMDS/QML
