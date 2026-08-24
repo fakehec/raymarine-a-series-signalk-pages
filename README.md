@@ -328,6 +328,31 @@ sticky panel file and a `compute_auto()` stub for you to fill in.
 The `Server: on/off` indicator top-right just reports whether the page can reach the
 bridge.
 
+#### The page side (how the plan stays in sync)
+
+On the MFD, the control page (`pages/ElectricalControl.qml`) does the mirror of the
+server's job — it **polls `/state` about once a second** and colors each marker from the
+returned array, with a short **optimistic hold** so a tap shows the new state
+immediately instead of blinking:
+
+```qml
+function channelOn(n) {                 // displayed state
+    var i = n - 1;
+    if (hold[i] !== -1 && now() < until[i]) return hold[i] === 1;   // optimistic hold
+    return real[i] === 1;                                           // else real state
+}
+function toggle(n) {                     // tap a dot / pill
+    var want = channelOn(n) ? 0 : 1;
+    hold[n-1] = want; until[n-1] = now() + 1500;   // hold ~1.5 s
+    httpGet(bridge + "/toggle/" + n);              // ask the server to switch
+}
+// Timer @1 Hz -> GET /state -> real = resp.ch; drop any hold the real state caught up to
+```
+
+So the loop is: **server owns the truth (PGN 127501); the page polls it, shows an
+optimistic hold on tap, and never assumes its command stuck.** See the file for the full
+version (markers, channel list, `Server:` indicator).
+
 ---
 
 ## Part 2 — The data pages
@@ -457,6 +482,7 @@ Iterate by rebuilding the zip and re-importing.
 ```
 http_bridge.py            # companion HTTP service: /wx (data) + /set /toggle /state (control)
 pages/
+  ElectricalControl.qml   # sample control page: boat plan + markers + state sync
   Environment.qml         # sample data page (native cells + HTTP tiles + poll)
   NOTE.md                 # where the cell library comes from
 figures/                  # the screenshots above
