@@ -121,8 +121,7 @@ updated units); the QML/RMDS approach is assumed to be similar there but is **un
 | 4 | **Companion host** — any small Linux box (Raspberry Pi is fine) running **Signal K** | Runs Signal K (decodes the bus) and `http_bridge.py`. |
 | 5 | **Raymarine a-Series MFD**, LightHouse II | Shows the pages. |
 
-You do **not** need a YachtDevices DataMaster-only setup, nor the CZone Configuration
-Tool (dead end on a-Series — see Part 1).
+You do **not** need the CZone Configuration Tool (dead end on a-Series — see Part 1).
 
 ---
 
@@ -192,14 +191,21 @@ SeaTalkhs/RayNet backbone self-assigns **static** addresses in the **10.0.0.0/8*
     (© Garmin/Trigentic — linked, not re-hosted here).
   - Installing an RMDS file on the MFD, step by step:
     [Garmin/Raymarine how-to](https://support.garmin.com/en-US/?faq=f11M0icind6WytePW55iB7).
-  - *(Note: designing switching signals needs an **EBP** project file describing your
-    boat's channels, from the dealer / EmpirBus Studio; the engine/tank/battery DataItem
-    IDs are standard and readable straight from EmpirBus Graphic.)*
+  - *(Note: you don't need a dealer's boat-specific project. For **data pages**, the
+    blank `.EBP` attached to the [TG11 thread](http://web.archive.org/web/20250523053102/https://forum.raymarine.com/showthread.php?tid=6834)
+    is enough — the engine/tank/battery DataItem IDs are standard and read straight out of
+    what EmpirBus Graphic exports.)*
 - **[Signal K server](https://signalk.org/)** on the companion host (open source),
   already ingesting the N2K bus — this is what `http_bridge.py` reads.
-- **YachtDevices DataMaster / RMDS package** — the base `.zip` of QML "cells" you start
-  from and drop your pages into. (The cell library belongs to YachtDevices and is *not*
-  redistributed here; start from your own package — see `pages/NOTE.md`.)
+- **The base RMDS package** — the `.zip` of QML "cells" you start from and drop your pages
+  into. Two honest sources depending on the page:
+  - the **control** page (boat plan) starts from the RMDS package **YachtDevices ships for
+    the [Circuit Control](https://www.yachtd.com/products/circuit_control.html) (the
+    YDCC-04)** — that's the cell library with the toggle/momentary controls;
+  - **data** pages are exported by **EmpirBus Graphic** (above).
+
+  Either way the cell library belongs to YachtDevices and is *not* redistributed here —
+  start from your own package (see `pages/NOTE.md`).
 
 ---
 
@@ -224,8 +230,8 @@ PGN 127501 (`electrical.switches.bank.*`).
 ## Background: how LightHouse II "digital switching" is built
 
 On a-Series/LightHouse II, digital-switching pages are QML, drawn from a "cell" library
-that ships inside a **RMDS package** (a `.zip` of a QML tree — the format YachtDevices'
-DataMaster tools produce). Two kinds of cell:
+that ships inside a **RMDS package** (a `.zip` of a QML tree — the package YachtDevices'
+Circuit Control ships, and the format EmpirBus Graphic exports). Two kinds of cell:
 
 - **Control cells** — toggle / momentary / dimmer, meant to drive a switching channel.
 - **DataItem cells** — a numeric/gauge bound to a fixed **DataItem ID** from the
@@ -269,7 +275,7 @@ an on/off control **and** a live state indicator, plus a labelled channel list.
 The instinct is to use **CZone** digital switching, which LightHouse supports natively on
 the larger systems. On **a-Series it does not run** — the native CZone switching UI
 reports **"Not Available"**. The a-Series line only exposes digital switching through the
-**YachtDevices DataMaster / RMDS** path, not the CZone display engine. So binding
+**YachtDevices Circuit Control / RMDS** path, not the CZone display engine. So binding
 controls to CZone circuits was a dead end; the page renders but the control layer never
 comes alive.
 
