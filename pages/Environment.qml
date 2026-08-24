@@ -4,8 +4,9 @@
 // tiles fed by the HTTP bridge (/wx) for values the catalog can't express — here
 // true wind, dew point, cloud cover, a weather headline and a barometer line.
 //
-// QtQuick 1.1 dialect. Author to the logical 800x480 canvas (or author at 1280x800
-// and scale the content Item, as below). Adapt IDs/paths/host to your boat.
+// QtQuick 1.1. Author the content Item at your model's native resolution and scale
+// it to the viewport (a12/a128 = 1280x800; 7"/9" units = 800x480 — see EmpirBus manual
+// Table 3.1). Adapt IDs/paths/host to your boat.
 
 import QtQuick 1.1
 import "../Cells/Indicators"          // the YachtDevices DataItem cell library

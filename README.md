@@ -14,9 +14,17 @@ Everything here uses public, documented mechanisms (Signal K REST, NMEA 2000 PGN
 LightHouse "RMDS" QML page format, a YachtDevices gateway). No MFD firmware is modified;
 pages install through the MFD's normal **Import Configuration File** menu.
 
-> Platform: a-Series MFD, **LightHouse II**, logical page canvas **800×480**, QML in the
-> **QtQuick 1.1** dialect. Companion host: a small Linux box (a Raspberry Pi is plenty)
-> running **Signal K** and ingesting the N2K bus.
+> Platform: a-Series MFD, **LightHouse II**, QML in the **QtQuick 1.1** dialect.
+> Companion host: a small Linux box (a Raspberry Pi is plenty) running **Signal K** and
+> ingesting the N2K bus.
+>
+> **Design resolution — per MFD model.** Author your layout at the display's native
+> resolution (EmpirBus Graphic *User Manual v2.3*, Table 3.1). The **12″ units — a12
+> (a125/a127/**a128**), c12, e12, e16, gS12/16** — are **1280 × 800**; the **7″/9″ units
+> (a7, a9, c9, e7, e9, eS7/9, gS9)** are **800 × 480**. After the MFD chrome (a **50 px**
+> menu border + a **25 px** page-title border), the usable area on a 1280 × 800 unit is
+> **1280 × 725**. Author the content `Item` at the full model size and scale it to the
+> runtime viewport (`transform: Scale { xScale: view.width/1280; ... }`).
 
 **Which MFDs this works on.** The same mechanism applies to **any Raymarine MFD running
 LightHouse II** — that's the **a-, c- and e-Series** — since they share the RMDS/QML
@@ -462,8 +470,10 @@ Iterate by rebuilding the zip and re-importing.
 - **Gateway RAW port must be bidirectional.** Set its TCP server to **RAW** and **read +
   write** on the port (default `:2002`). A read-only or NMEA-0183 port lets you *see*
   state but the toggles do nothing — the #1 "why won't it switch?" trap.
-- **Logical canvas is 800×480.** Author to that (or author at 1280×800 and scale the
-  content `Item`), or fonts/positions come out wrong.
+- **Use the right design resolution for your model** (EmpirBus manual Table 3.1): the 12″
+  units (incl. a128) are **1280×800**, usable **1280×725** after the 50 px menu + 25 px
+  title borders; the 7″/9″ units are **800×480**. Author the content `Item` at the full
+  size and scale it to the viewport, or fonts/positions come out wrong.
 - **Cache-bust every HTTP URL** (`?t=<epoch>`).
 - **Gateway connection limit is tiny** — one persistent connection, never scan it.
 - **State comes from PGN 127501, not from hope.** Reconcile the UI to reported state, and
