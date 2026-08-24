@@ -203,7 +203,7 @@ few Signal K plugins/derivations enabled — without them those tiles are simply
 | Dew point | **`signalk-derived-data`** dew-point calc → `environment.outside.dewPointTemperature` |
 | Cloud cover / visibility | a weather source publishing `environment.weather.*` (e.g. an OpenWeather bridge/plugin) |
 | Barometric tendency | **`signalk-barometer-trend`** → `environment.outside.pressure.trend.*` |
-| LLM report headlines | an **LLM-analyzer plugin** writing `reports.jsonl` (see Part 2) |
+| LLM report headlines | **`signalk-openrouter-companion`** (needs an OpenRouter API key) — writes `reports.jsonl` (see Part 2) |
 
 None of these are required for the *control* page — that only needs Signal K decoding
 PGN 127501 (`electrical.switches.bank.*`).
@@ -446,19 +446,22 @@ honest until you do.)
 
 ### LLM report headlines on the MFD
 
-The most unusual tiles: **plain-language summaries written by an LLM.** This needs an
-**LLM-analyzer Signal K plugin** — e.g. an OpenRouter-type companion plugin — that runs
-periodic analyzers over the boat's own data (a weather forecast, a per-engine session
-summary when an engine stops, a daily battery-health note) and writes each to a
+The most unusual tiles: **plain-language summaries written by an LLM.** These come from a
+Signal K plugin —
+**[`signalk-openrouter-companion`](https://github.com/NearlCrews/signalk-openrouter-companion)**
+(by NearlCrews; on the **Signal K app store** and npm) — which runs periodic *analyzers*
+over the boat's own data (a weather forecast, a per-engine session summary when an engine
+stops, a daily battery-health note) using an LLM via **OpenRouter**, and writes each to a
 **`reports.jsonl`** file, one JSON object per line:
 
 ```json
 {"analyzer": "forecast", "report": "Clouds are thickening, but no major deterioration…\n\n<full text>"}
 ```
 
-The plugin needs an **LLM API key** and costs a fraction of a cent per call. The bridge
-just takes the **first line** (the ≤80-char headline) of the latest report per analyzer
-(`report_headline()` in `http_bridge.py`) and the page shows it as a text line:
+Install it from the Signal K app store, give it your **OpenRouter API key** (a few cents
+a day at most), and enable the analyzers you want. The bridge just takes the **first
+line** (the ≤80-char headline) of the latest report per analyzer (`report_headline()` in
+`http_bridge.py`) and the page shows it as a text line:
 
 - **Environment**: a *Weather* headline + a *Barometer* tendency line.
 - **Engines**: per-engine *session* summaries + a *consumption/drift* line.
