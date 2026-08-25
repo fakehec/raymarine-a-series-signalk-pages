@@ -57,6 +57,7 @@ updated units); the QML/RMDS approach is assumed to be similar there but is **un
 - [Part 1 — Electrical control (the boat-plan page)](#part-1--electrical-control-the-boat-plan-page)
 - [Part 2 — The data pages](#part-2--the-data-pages)
 - [Part 3 — Deploy & iterate](#part-3--deploy--iterate)
+- [Part 4 — Rich pages: image tiles & a self-drawn instrument page](#part-4--rich-pages-image-tiles--a-self-drawn-instrument-page)
 - [Gotchas & lessons](#gotchas--lessons)
 
 ![The a-Series MFD at the helm running the custom Electrical Control page](figures/0-helm.jpg)
@@ -531,6 +532,73 @@ Iterate by rebuilding the zip and re-importing.
 
 ---
 
+## Part 4 — Rich pages: image tiles & a self‑drawn instrument page
+
+The pages so far are made of native DataItem cells and a few `Text` tiles. Two more
+patterns turn the a‑Series into something closer to a full dashboard — **without** a browser
+and **without** the fragile native gauge cells.
+
+### 4a. Anything you can render to an image can be a page
+
+LightHouse II pages are **QtQuick 1.1** — there is no `WebView`, so you can't embed a live web
+page. But QtQuick's `Image` element **loads a remote `http` URL directly** (verified on a real
+a128). So the trick is: **render whatever you want to a PNG/JPG on the companion host, cache it,
+and let the MFD poll that image.** A "web page / dashboard / chart" becomes a periodically
+refreshed picture. Interactive apps don't work; static or slow‑changing content works great.
+
+`dash_cache.py` in this repo is the companion side: for each tile it fetches a render URL,
+converts it to JPEG, and serves the cached file on the boat network. On a fetch failure it keeps
+serving the **last good image**. It is deliberately **separate from the control bridge**
+(`http_bridge.py`) — a slow or failed fetch must never stall relay control. Locally generated
+tiles (see the GRIB one below) are just written into the cache dir and served the same way.
+`pages/Tile.qml` is the MFD side: a full‑screen `Image` that re‑polls with a cache‑busting
+`?t=` every minute.
+
+**A Grafana dashboard as a tile.** Render a dashboard at the MFD's native size with the chrome
+hidden and point a tile at it. With Grafana that's the built‑in **image‑renderer**
+(`/render/d/<uid>/...?width=1280&height=800&kiosk=1`), a hidden time‑picker and no templating so
+the frame is clean. The companion caches the JPEG; the MFD shows it. Barometer trend + wind rose,
+straight off your own InfluxDB:
+
+![Grafana dashboard rendered as an a-Series page](figures/fig-meteo.jpg)
+
+**A GRIB weather map as a tile.** Same pattern, but you render the picture yourself: read the
+wind GRIB (e.g. with ecCodes), draw the field + barbs + coastline (matplotlib/Cartopy), mark the
+boat, and write the JPEG into the cache dir. It refreshes when a new model run lands. A local,
+high‑res wind forecast on the plotter:
+
+![A rendered GRIB wind field as an a-Series page](figures/fig-grib.jpg)
+
+### 4b. A self‑drawn instrument page (`pages/Instruments.qml`)
+
+The most useful custom page here is drawn **entirely from QtQuick 1.1 primitives** —
+`Rectangle`, `Text`, `Image`, `Repeater`, `MouseArea` and `Rotation` transforms. It uses **no
+native RMDS gauge cells on purpose**: those cells aren't shipped with a usable example, and a
+malformed one makes LightHouse **silently reject the whole config** (you get *0 digital‑switching
+pages*, not one broken page — see Gotchas). Hand‑drawn primitives are safe and give full control.
+
+![The self-drawn Instruments page](figures/fig-instruments.jpg)
+
+What it packs into one page:
+
+- **A 2×2 gauge cluster:** an apparent‑wind dial (a needle `Rectangle` rotated by AWA), a
+  heading/COG compass, a depth read‑out that turns amber/red below a threshold, and a battery
+  state‑of‑charge gauge — all fed **directly from Signal K's REST API** (`.../signalk/v1/api/
+  vessels/self/<path>`), which the QML polls with `XMLHttpRequest`. Values are retained and only
+  change when Signal K reports a change.
+- **Tank bars** (fresh / fuel / black) coloured per tank; fresh water uses the bridge's corrected
+  value (`/wx`), the rest read Signal K tank paths.
+- **Scene buttons** that drive circuits through the control bridge (`GET /set/<n>/<0|1>`), written
+  as toggles so pressing an active scene releases it.
+- **Page‑jump buttons** — the same idea as the native *ChangeView* control, done in one line:
+  `MouseArea { onClicked: view.currentIndex = N }`. `view` is the runtime object the pages already
+  use for `view.width`/`view.height`; it also carries `currentIndex`, so a page can navigate the
+  page set directly. This gives you a "home menu" of direct jumps instead of swiping through pages.
+
+Everything is a sample — adapt the Signal K paths, the bridge address, the tank/scene channels and
+the gauge ranges to your boat.
+
+
 ## Gotchas & lessons
 
 - **CZone is a dead end on a-Series** — use the YachtDevices RMDS path.
@@ -558,10 +626,13 @@ Iterate by rebuilding the zip and re-importing.
 
 ```
 http_bridge.py            # companion HTTP service: /wx (data) + /set /toggle /state (control)
+dash_cache.py             # companion: render a dashboard/web/GRIB -> cached image tiles
 dataitem_ids.md           # the extracted EmpirBus/RMDS DataItem name->ID catalog (51 signals)
 pages/
   ElectricalControl.qml   # sample control page: boat plan + markers + state sync
   Environment.qml         # sample data page (native cells + HTTP tiles + poll)
+  Tile.qml                # sample image-tile page (Grafana/GRIB/web rendered to an image)
+  Instruments.qml         # sample self-drawn page: gauge cluster + tanks + scenes + page links
   NOTE.md                 # where the cell library comes from
 figures/                  # the screenshots above
 LICENSE
